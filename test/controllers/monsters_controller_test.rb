@@ -38,8 +38,9 @@ class MonstersControllerTest < ActionDispatch::IntegrationTest
   test "name filter is a case-insensitive substring" do
     get monsters_path, params: { q: "SHARK" }
 
-    assert_select "tbody tr", 1
+    assert_select "tbody tr", 2
     assert_select "tbody a", text: "Giant Shark"
+    assert_select "tbody a", text: "Reef Shark"
   end
 
   test "name filter treats special characters literally" do

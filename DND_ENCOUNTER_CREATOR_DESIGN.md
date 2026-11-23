@@ -24,13 +24,15 @@ Embed a short search document per record from available fields such as descripti
 ## Generation flow
 
 1. The DM enters the party and scene and selects a difficulty. Ollama extracts party levels and summarizes the scene. Ask for clarification if headcount and levels are missing or inconsistent. Classes are optional.
-2. Rails calculates a 2024 5e XP budget. For the requested difficulty, sum the per-character budgets for the party. Summing individual budgets for mixed-level parties is a v1 design assumption.
+2. Rails calculates a 2024 5e XP budget. For the requested difficulty, sum the per-character budgets for the party. The 2024 rules multiply the table value by party size and give no guidance for mixed levels, so summing individual budgets for mixed-level parties is a v1 design assumption. `Encounters::XpBudget` implements this.
 3. Ollama calls the following tools through Rails. Bind evaluation to the validated party and difficulty for that request.
 
 | MCP tool | Input | Output |
 | --- | --- | --- |
 | `search_monsters` | Semantic query, optional catalog filters, maximum individual XP | Bounded shortlist of candidate IDs, names, sources, XP, and relevant traits |
 | `evaluate_lineup` | Catalog IDs and positive integer quantities | Total XP, budget, remaining XP, and validation feedback |
+
+`evaluate_lineup` calls `Encounters::LineupEvaluation`. Its feedback is a list of problems, each with a stable code (`empty_lineup`, `invalid_entry`, `unknown_id`, `invalid_quantity`, `ineligible`, `duplicate_entry`, `multiple_variants`, `over_budget`), the catalog ID when there is one, and a message the model can act on.
 
 4. Allow the model to refine its proposal within a bounded tool loop. It should aim to spend close to the budget while preserving thematic fit. Rails computes total XP as the sum of monster XP times quantity and revalidates the final IDs, quantities, eligibility, and budget. Use the selected budget as a ceiling and show any material shortfall.
 5. Render the lineup with one stat block per distinct selected record. If the search yields no valid thematic lineup, explain that result and preserve the input for editing. Report model, database, or index failures as recoverable errors.
