@@ -151,7 +151,8 @@ parsing logic changes, even if the source didn't.
 - **CR:** use Integer as-is. Parse `"a/b"` as a rational. Use `data-CrNum` as a
   cross-check. `"None"`, `"-"`, and `"—"` give nil, with reason `cr_unresolved`.
 - **XP:** strip commas and convert to an integer. If it's missing, derive it via
-  the CR-to-XP table (CR 0 → 10). The derived and source cases record
+  the CR-to-XP table. CR 0 is never derived, because it is worth "0 or 10" XP
+  and so doesn't map to exactly one value. The derived and source cases record
   provenance.
 - **Ability modifiers:** compute them at render time as `(score - 10) / 2`
   (floor), and ignore the source's `data-*-mod` strings.

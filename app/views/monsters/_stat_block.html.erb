@@ -1,0 +1,68 @@
+<%# Full stat block for one Monster. Source text is always escaped (no html_safe/raw). %>
+<article class="stat-block" aria-labelledby="<%= dom_id(monster, :name) %>">
+  <header>
+    <h1 id="<%= dom_id(monster, :name) %>"><%= monster.name %></h1>
+    <p class="stat-subtitle"><%= [ [ monster.size, monster.creature_type ].compact.join(" "), monster.alignment ].compact_blank.join(", ") %></p>
+  </header>
+
+  <hr>
+
+  <dl class="stat-lines">
+    <div><dt>Armor Class</dt> <dd><%= monster.armor_class_display || monster.armor_class %></dd></div>
+    <div><dt>Hit Points</dt> <dd><%= monster.hit_points_display || monster.hit_points %></dd></div>
+    <div><dt>Speed</dt> <dd><%= monster.speed %></dd></div>
+  </dl>
+
+  <hr>
+
+  <table class="abilities">
+    <thead>
+      <tr><% Monster::ABILITIES.each do |ability| %><th scope="col"><%= ability.upcase %></th><% end %></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <% Monster::ABILITIES.each do |ability| %>
+          <% score = monster.abilities&.dig(ability) %>
+          <td><%= score ? "#{score} (#{ability_modifier(score)})" : "—" %></td>
+        <% end %>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <dl class="stat-lines">
+    <% MonstersHelper::DEFENSE_FIELDS.each do |field, label| %>
+      <% if (value = monster.public_send(field)).present? %>
+        <div><dt><%= label %></dt> <dd><%= value %></dd></div>
+      <% end %>
+    <% end %>
+    <div><dt>Challenge</dt> <dd><%= challenge_rating_label(monster) %> (<%= xp_label(monster) %> XP)</dd></div>
+  </dl>
+
+  <% if monster.traits.any? %>
+    <hr>
+    <section class="stat-section" aria-label="Traits">
+      <%= render partial: "monsters/entry", collection: monster.traits %>
+    </section>
+  <% end %>
+
+  <% if monster.spells.present? %>
+    <section class="stat-section">
+      <h2>Spells</h2>
+      <% monster.spells.each do |level, spells| %>
+        <p><strong><%= spell_level_label(level) %>:</strong> <em><%= Array(spells).join(", ") %></em></p>
+      <% end %>
+    </section>
+  <% end %>
+
+  <% MonstersHelper::ENTRY_SECTIONS.each do |field, heading| %>
+    <% entries = monster.public_send(field) %>
+    <% if entries.any? %>
+      <section class="stat-section">
+        <h2><%= heading %></h2>
+        <%= render partial: "monsters/entry", collection: entries %>
+      </section>
+    <% end %>
+  <% end %>
+</article>

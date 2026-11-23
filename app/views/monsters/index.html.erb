@@ -1,0 +1,50 @@
+<% content_for :title, "Monster catalog" %>
+
+<header class="page-header">
+  <h1>Monster catalog</h1>
+  <p class="muted"><%= pluralize(@monsters.size, "monster") %><%= " matching “#{@query}”" if @query.present? %></p>
+</header>
+
+<%= form_with url: monsters_path, method: :get, class: "catalog-filter", role: "search" do |form| %>
+  <%= form.label :q, "Filter by name", class: "visually-hidden" %>
+  <%= form.search_field :q, value: @query, placeholder: "Filter by name, e.g. shark", autocomplete: "off" %>
+  <%= form.submit "Filter", name: nil %>
+  <%= link_to "Clear", monsters_path if @query.present? %>
+<% end %>
+
+<% if @monsters.any? %>
+  <div class="table-wrap">
+    <table class="catalog">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Source</th>
+          <th scope="col">Size &amp; type</th>
+          <th scope="col" class="num">CR</th>
+          <th scope="col" class="num">XP</th>
+          <th scope="col">Generation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @monsters.each do |monster| %>
+          <tr id="<%= dom_id(monster) %>">
+            <td><%= link_to monster.name, monster_path(monster) %></td>
+            <td><%= monster.book %></td>
+            <td><%= [ monster.size, monster.creature_type ].compact.join(" ") %></td>
+            <td class="num"><%= challenge_rating_label(monster) %></td>
+            <td class="num"><%= xp_label(monster) %></td>
+            <td>
+              <% if monster.eligible %>
+                <span class="badge badge-ok">Eligible</span>
+              <% else %>
+                <span class="badge badge-no">Not eligible</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <p class="empty">No monsters match “<%= @query %>”.</p>
+<% end %>

@@ -1,0 +1,36 @@
+<% content_for :title, @monster.name %>
+
+<p class="breadcrumb"><%= link_to "← Monster catalog", monsters_path %></p>
+
+<%= render "monsters/stat_block", monster: @monster %>
+
+<section class="catalog-meta" aria-label="Catalog details">
+  <dl>
+    <dt>Source</dt>
+    <dd><%= @monster.book %> (<%= @monster.publisher %>)</dd>
+    <dt>XP</dt>
+    <dd><%= xp_label(@monster) %><%= " — #{xp_source_label(@monster)}" if xp_source_label(@monster) %></dd>
+    <dt>Catalog ID</dt>
+    <dd><code><%= @monster.id %></code></dd>
+  </dl>
+
+  <% if @monster.eligible %>
+    <p><span class="badge badge-ok">Eligible</span> for encounter generation.</p>
+  <% else %>
+    <div class="notice-ineligible">
+      <p><span class="badge badge-no">Not eligible</span> for encounter generation:</p>
+      <ul>
+        <% @monster.ineligibility_reasons.each do |reason| %>
+          <li><%= ineligibility_label(reason) %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</section>
+
+<% if @monster.lore.present? %>
+  <section class="lore">
+    <h2>Description</h2>
+    <p class="prose"><%= @monster.lore %></p>
+  </section>
+<% end %>

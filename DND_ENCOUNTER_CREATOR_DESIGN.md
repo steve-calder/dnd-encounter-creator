@@ -11,11 +11,11 @@ The scene, party composition, and encounter objective guide monster selection. P
 - **Rails** handles the form, catalog import, encounter rules, model orchestration, and result rendering. Run Rails on the host for v1.
 - **MongoDB** runs in Docker Compose with a persistent volume. Start with the self-contained `mongodb/mongodb-atlas-local` image, which includes vector search and runs on the local machine. Pin an image tag after verifying it on the development machine.
 - **Ollama** runs locally and serves a tool-capable generation model and a separate embedding model. Verify the selected generation model can handle a multi-turn tool loop early.
-- **MCP** provides the catalog and difficulty tools. Rails is the MCP client and translates Ollama's tool calls into MCP requests. Start with a local stdio server process that calls shared Rails application services. Generation runs locally after the models, container image, and source data are downloaded.
+- **MCP** provides the catalog and difficulty tools. Rails is the MCP client and translates Ollama's tool calls into MCP requests. Start with a local stdio server process that calls shared Rails application services. Generation runs locally after the models and container image are downloaded. The monster catalog ships in the repo.
 
 ## Catalog and retrieval
 
-Import the full [monster JSON](https://raw.githubusercontent.com/nick-aschenbach/dnd-data/refs/heads/main/data/monsters.json) with no book restrictions. Record a source revision or checksum. Inspect the raw file before committing to field mappings, particularly for stat blocks, CR, and XP.
+The catalog is limited to the System Reference Document (SRD): the 379 records from the Free Basic Rules (2014) and Free Basic Rules (2024) in the [monster JSON](https://github.com/nick-aschenbach/dnd-data/blob/649f7f964b20835852bff3659aa36875dd7c35df/data/monsters.json), pinned at commit `649f7f9` (SHA-256 `cee51930…`). These are the only records in that dataset with complete stat blocks. The other 11,084 records carry only lore and a challenge rating, which is often malformed, and even Monster Manual entries there are lore only. The selected records ship in the repo as `db/data/srd_monsters.json`, copied verbatim, with a header recording their upstream revision and checksum. The import reads only this file and needs no network. A dev-only script, `script/extract_srd_monsters.rb`, regenerates the file reproducibly from the pinned upstream. To widen the catalog, edit the script's `BOOKS` list and regenerate the file. Eligibility rules already exclude incomplete records.
 
 Preserve each source record under a stable ID, including the original stat block content and source. Normalize available name, type, movement, CR, and XP fields. Keep same-name variants as distinct records and show which source was selected. Proposed v1 behavior is to use at most one version of a creature in a lineup. If XP is missing but CR maps unambiguously to XP, derive it and track its provenance. Keep records with unresolved XP or incomplete stat blocks in the catalog, but report and exclude them from generation.
 
@@ -45,9 +45,9 @@ Verify that unknown IDs, invalid quantities, and over-budget proposals fail vali
 
 ## Build order
 
-1. Inspect and import a pinned dataset snapshot. Render a catalog stat block in Rails.
+1. Inspect the pinned dataset, commit the curated SRD subset, and import it. Render a catalog stat block in Rails.
 2. Implement and test the 2024 XP calculator against the boat example.
-3. Generate embeddings locally, create the vector index, and inspect candidate rankings.
+3. Generate embeddings locally, create the vector index, and inspect candidate rankings. First revise the index's filter fields: the init script filters on `environment`, which the catalog doesn't have, and it lacks the `eligible` and `xp` filters that the retrieval order needs.
 4. Expose search and validation through MCP and call both tools from Rails.
 5. Wire in Ollama's tool loop and complete the generation screen. Run the acceptance example and failure cases end to end.
 

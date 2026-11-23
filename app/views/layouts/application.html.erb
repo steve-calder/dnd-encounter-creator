@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Dnd Encounter Creator" %></title>
+    <title><%= [ content_for(:title), "D&D Encounter Creator" ].compact.join(" · ") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Dnd Encounter Creator">
+    <meta name="application-name" content="D&amp;D Encounter Creator">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -24,6 +24,17 @@
   </head>
 
   <body>
-    <%= yield %>
+    <nav class="site-nav">
+      <%= link_to "D&D Encounter Creator", root_path, class: "site-name" %>
+      <%= link_to "Monster catalog", monsters_path %>
+    </nav>
+
+    <main class="container">
+      <%= yield %>
+    </main>
+
+    <footer class="site-footer">
+      <%= render "shared/srd_attribution" %>
+    </footer>
   </body>
 </html>

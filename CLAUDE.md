@@ -12,7 +12,7 @@ and don't quietly diverge from it.
 
 ## Stack
 
-- Rails 8.1 on Ruby 4.0.9 (`.ruby-version`), with Hotwire (Turbo and Stimulus),
+- Rails 8.1 on Ruby 4.0.10 (`.ruby-version`), with Hotwire (Turbo and Stimulus),
   importmap, and Propshaft. No Node build step.
 - **MongoDB via Mongoid. There is no ActiveRecord** (`active_record/railtie` is
   disabled in `config/application.rb`). Don't generate migrations, `schema.rb`, or

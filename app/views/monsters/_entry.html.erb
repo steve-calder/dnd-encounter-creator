@@ -1,0 +1,2 @@
+<%# Kept on one line: .prose uses white-space: pre-line, so template newlines would render. %>
+<div class="stat-entry"><p class="prose"><strong><em><%= entry["name"] %>.</em></strong> <%= [ attack_summary(entry), entry["desc"] ].compact_blank.join(" ") %></p></div>

@@ -1,0 +1,124 @@
+:root {
+  --bg: #fbf8f3;
+  --surface: #ffffff;
+  --text: #2b2420;
+  --muted: #6b625b;
+  --border: #e2d9cc;
+  --accent: #7a200d;
+  --ok-bg: #e3f1e5;
+  --ok-text: #1d5b2a;
+  --no-bg: #f6e1dc;
+  --no-text: #8a2b17;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1816;
+    --surface: #24201d;
+    --text: #ece6df;
+    --muted: #a99f95;
+    --border: #3d3631;
+    --accent: #e07a5f;
+    --ok-bg: #1f3a25;
+    --ok-text: #a6dcb0;
+    --no-bg: #43231c;
+    --no-text: #f2b2a3;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 var(--font);
+}
+
+a { color: var(--accent); }
+
+.container { max-width: 960px; margin: 0 auto; padding: 0 16px 48px; }
+
+.site-nav {
+  display: flex;
+  gap: 24px;
+  align-items: baseline;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.site-nav .site-name { font-weight: 700; color: var(--text); text-decoration: none; }
+
+.site-footer { border-top: 1px solid var(--border); padding: 16px; }
+.attribution { max-width: 960px; margin: 0 auto; color: var(--muted); font-size: 0.85rem; }
+
+.page-header h1 { margin: 24px 0 4px; }
+.muted { color: var(--muted); margin: 0 0 16px; }
+.breadcrumb { margin: 16px 0; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.catalog-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.catalog-filter input[type="search"] {
+  flex: 1 1 240px; padding: 8px 10px; font: inherit;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text);
+}
+.catalog-filter input[type="submit"] {
+  padding: 8px 14px; font: inherit; border: 0; border-radius: 6px;
+  background: var(--accent); color: #fff; cursor: pointer;
+}
+
+.table-wrap { overflow-x: auto; }
+table.catalog { width: 100%; border-collapse: collapse; background: var(--surface); }
+table.catalog th, table.catalog td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+table.catalog th { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+table.catalog .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+.badge-ok { background: var(--ok-bg); color: var(--ok-text); }
+.badge-no { background: var(--no-bg); color: var(--no-text); }
+
+.empty { color: var(--muted); }
+
+/* Stat block */
+.stat-block {
+  max-width: 640px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border-top: 4px solid var(--accent);
+  border-bottom: 4px solid var(--accent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+.stat-block h1 { margin: 0; color: var(--accent); font-family: var(--font-serif); font-size: 1.8rem; }
+.stat-block h2 {
+  margin: 16px 0 6px; color: var(--accent); font-family: var(--font-serif);
+  font-size: 1.15rem; font-weight: 400; border-bottom: 1px solid var(--accent);
+}
+.stat-block hr { border: 0; border-top: 2px solid var(--accent); margin: 10px 0; opacity: 0.6; }
+.stat-subtitle { margin: 0; font-style: italic; }
+
+.stat-lines { margin: 0; }
+.stat-lines div { margin: 2px 0; }
+.stat-lines dt { display: inline; font-weight: 700; color: var(--accent); }
+.stat-lines dd { display: inline; margin: 0; }
+
+table.abilities { width: 100%; text-align: center; border-collapse: collapse; }
+table.abilities th { color: var(--accent); }
+table.abilities td { font-variant-numeric: tabular-nums; }
+
+.stat-entry p { margin: 6px 0; }
+.prose { white-space: pre-line; }
+
+.catalog-meta { max-width: 640px; margin-top: 20px; }
+.catalog-meta dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0 0 12px; }
+.catalog-meta dt { color: var(--muted); }
+.catalog-meta dd { margin: 0; }
+.notice-ineligible { padding: 8px 12px; border-left: 4px solid var(--no-text); background: var(--no-bg); }
+.notice-ineligible ul { margin: 4px 0; }
+
+.lore { max-width: 640px; }

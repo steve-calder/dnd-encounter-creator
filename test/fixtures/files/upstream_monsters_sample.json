@@ -1,0 +1,6 @@
+[
+  {"name":"Zombie","description":"A rotting corpse.","properties":{"Category":"Monsters","Challenge Rating":"1/4","data-XP":50},"publisher":"Wizards of the Coast","book":"Free Basic Rules (2014)"},
+  {"name":"A-mi-kuk","description":"Crimson slime covers this ungainly creature.","properties":{"Category":"Monsters","Size":"Huge","Type":"aberration","Challenge Rating":7},"publisher":"Kobold Press","book":"Tome of Beasts 2"},
+  {"name":"Ape","description":"A 2024 ape.","properties":{"Category":"Monsters","Challenge Rating":"1/2","data-XP":100},"publisher":"Wizards of the Coast","book":"Free Basic Rules (2024)"},
+  {"name":"Ape","description":"A 2014 ape.","properties":{"Category":"Monsters","Challenge Rating":"1/2","data-XP":100},"publisher":"Wizards of the Coast","book":"Free Basic Rules (2014)"}
+]
