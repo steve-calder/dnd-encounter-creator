@@ -68,12 +68,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # services:
-    #  redis:
-    #    image: valkey/valkey:8
-    #    ports:
-    #      - 6379:6379
-    #    options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    services:
+      # Same image as compose.yaml; Mongoid's test config defaults to
+      # admin/admin on localhost:27017.
+      mongodb:
+        image: mongodb/mongodb-atlas-local:8.0
+        env:
+          MONGODB_INITDB_ROOT_USERNAME: admin
+          MONGODB_INITDB_ROOT_PASSWORD: admin
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "/usr/local/bin/runner healthcheck"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -93,12 +103,22 @@ jobs:
   system-test:
     runs-on: ubuntu-latest
 
-    # services:
-    #  redis:
-    #    image: valkey/valkey:8
-    #    ports:
-    #      - 6379:6379
-    #    options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    services:
+      # Same image as compose.yaml; Mongoid's test config defaults to
+      # admin/admin on localhost:27017.
+      mongodb:
+        image: mongodb/mongodb-atlas-local:8.0
+        env:
+          MONGODB_INITDB_ROOT_USERNAME: admin
+          MONGODB_INITDB_ROOT_PASSWORD: admin
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "/usr/local/bin/runner healthcheck"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

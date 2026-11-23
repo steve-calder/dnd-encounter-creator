@@ -1,0 +1,46 @@
+# Local MongoDB with Atlas Vector Search support.
+#
+# Uses the official mongodb-atlas-local image, which bundles mongod and mongot
+# (the search engine behind Atlas Search / Vector Search), so $vectorSearch
+# aggregations and vector search indexes work locally.
+#
+#   docker compose up -d        # start in the background
+#   docker compose ps           # wait for "healthy"
+#   docker compose down         # stop (data persists in named volumes)
+#   docker compose down -v      # stop and wipe all data
+#
+# Connection string (defaults):
+#   mongodb://admin:admin@localhost:27017/?directConnection=true&authSource=admin
+
+services:
+  mongodb:
+    image: mongodb/mongodb-atlas-local:8.0
+    container_name: dnd-mongodb
+    restart: unless-stopped
+    hostname: mongodb
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGODB_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin}
+      MONGODB_INITDB_DATABASE: ${MONGO_DATABASE:-dnd_encounter_creator_development}
+      # Vector size for monsters_vector_index; must match the embedding model.
+      # Read only by the init script, so changes need `docker compose down -v`.
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
+    ports:
+      # Bound to localhost only; not exposed on your network.
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+      - mongot_data:/data/mongot # vector/search index storage
+      - ./docker/mongo/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/runner", "healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mongo_data:
+  mongo_config:
+  mongot_data:
