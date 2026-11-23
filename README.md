@@ -8,6 +8,9 @@ similarity queries over embeddings.
 - Ruby 4.0.10 (see `.ruby-version`)
 - Bundler
 - Docker with Docker Compose
+- [Ollama](https://ollama.com) running locally, with the embedding model pulled:
+  `ollama pull embeddinggemma`. It's needed for embeddings and vector search, not
+  for the tests.
 
 ## Getting started
 
@@ -30,11 +33,14 @@ similarity queries over embeddings.
    This installs gems, clears logs and temp files, and starts the app.
    On later runs, start the server with `bin/dev`.
 
-3. **Load the monster catalog** (see [Monster catalog](#monster-catalog)):
+3. **Load the monster catalog** (see [Monster catalog](#monster-catalog)) and
+   **set up search** (see [Vector search](#vector-search)):
 
    ```sh
    bin/rails db:mongoid:create_indexes
    bin/rails catalog:import
+   bin/rails catalog:search_indexes
+   bin/rails catalog:embed
    ```
 
 4. Open <http://localhost:3000> to browse the catalog. The health check is at
@@ -99,8 +105,10 @@ project root (it is gitignored) or export them in your shell.
 | `MONGO_PASSWORD` | `admin`                             | container and Rails                 |
 | `MONGO_PORT`     | `27017`                             | container and Rails                 |
 | `MONGO_HOST`     | `localhost`                         | Rails                               |
-| `MONGO_DATABASE` | `dnd_encounter_creator_development` | container (database the init script sets up) |
-| `EMBEDDING_DIMENSIONS` | `768` | container (vector index size; see below) |
+| `MONGO_DATABASE` | `dnd_encounter_creator_development` | container (initial database name)   |
+| `OLLAMA_URL`     | `http://localhost:11434`            | Rails (embedding model service)     |
+| `EMBEDDING_MODEL` | `embeddinggemma`                   | Rails (catalog and query embeddings) |
+| `EMBEDDING_DIMENSIONS` | `768`                         | Rails (vector size; see below)      |
 
 Docker Compose reads `.env` automatically; Rails does not, so export the
 variables in your shell too if you change them. The username and password take
@@ -120,19 +128,36 @@ advertises the hostname `mongodb`, which your machine can't resolve.
 
 ## Vector search
 
-On first startup with an empty database, the container runs
-[docker/mongo/init/01-vector-index.js](docker/mongo/init/01-vector-index.js).
-It creates a `monsters` collection with a vector search index named
-`monsters_vector_index`:
+Each monster has a short search document (name, type, movement, senses,
+traits, actions, and lore) that is embedded with a local Ollama model. Rails
+owns the two search indexes on the `monsters` collection:
 
-- `embedding`: a vector of `EMBEDDING_DIMENSIONS` numbers (default 768)
-  compared by cosine similarity
-- `challenge_rating` and `environment`: fields you can filter on
+- `monsters_vector_index`: `embedding`, a vector of `EMBEDDING_DIMENSIONS`
+  numbers compared by cosine similarity, filterable by `eligible`, `xp`,
+  `challenge_rating`, and `embedding_model`
+- `monsters_text_index`: full-text search over `name` and `search_document`,
+  used as the keyword baseline
 
-`EMBEDDING_DIMENSIONS` must match your embedding model's output size. The
-default, 768, fits Ollama's `nomic-embed-text`; `mxbai-embed-large` needs 1024.
-To change it, set the variable (for example in `.env`) and recreate the database
-so the index is rebuilt.
+```sh
+bin/rails catalog:search_indexes   # create or update both indexes, then wait until queryable
+bin/rails catalog:embed            # embed new or changed records; unchanged ones are skipped
+bin/rails "catalog:search[sea creatures attacking a ship,2250]"   # top 10, max 2,250 XP each
+bin/rails catalog:compare_search   # vector vs. keyword, side by side, for several scenes
+```
+
+Both tasks are safe to rerun. `catalog:search_indexes` updates an index whose
+definition changed, such as a new size, in place, so you don't need to
+recreate the database. `catalog:embed` stores the model name and a hash of the
+exact input on each record, so it re-embeds only records whose search document
+or model changed. Re-importing the catalog keeps existing embeddings.
+
+`EMBEDDING_DIMENSIONS` must match the model's output size. The default, 768,
+fits `embeddinggemma` and `nomic-embed-text`; `mxbai-embed-large` needs 1024.
+To switch models, set `EMBEDDING_MODEL` and `EMBEDDING_DIMENSIONS`, then run
+`catalog:search_indexes` and `catalog:embed`.
+
+If Ollama isn't running, `catalog:embed` and the search tasks stop with a
+message naming the URL and model. Start Ollama and run the task again.
 
 ## Managing the database
 
@@ -143,10 +168,11 @@ docker compose down        # stop; data is kept in Docker volumes
 docker compose down -v     # stop and delete all data and indexes
 ```
 
-To recreate the database from scratch, which reruns the init script:
+To recreate the database from scratch, then reload the catalog and search:
 
 ```sh
 docker compose down -v && docker compose up -d --wait
+bin/rails db:mongoid:create_indexes catalog:import catalog:search_indexes catalog:embed
 ```
 
 ## Running tests

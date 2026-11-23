@@ -22,9 +22,6 @@ services:
       MONGODB_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
       MONGODB_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin}
       MONGODB_INITDB_DATABASE: ${MONGO_DATABASE:-dnd_encounter_creator_development}
-      # Vector size for monsters_vector_index; must match the embedding model.
-      # Read only by the init script, so changes need `docker compose down -v`.
-      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
     ports:
       # Bound to localhost only; not exposed on your network.
       - "127.0.0.1:${MONGO_PORT:-27017}:27017"
@@ -32,6 +29,8 @@ services:
       - mongo_data:/data/db
       - mongo_config:/data/configdb
       - mongot_data:/data/mongot # vector/search index storage
+      # Scripts here run once, on an empty volume. Search indexes are not created
+      # here; Rails owns them (bin/rails catalog:search_indexes).
       - ./docker/mongo/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "/usr/local/bin/runner", "healthcheck"]

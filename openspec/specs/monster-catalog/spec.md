@@ -119,6 +119,17 @@ Re-importing the same dataset SHALL update records in place by ID, SHALL NOT cre
 - **WHEN** the committed dataset is imported a second time with no changes
 - **THEN** the record count is unchanged and the report shows 0 created and 379 unchanged
 
+### Requirement: Re-import preserves embeddings
+Re-importing the catalog SHALL keep each record's embedding, embedding model, and embedding input hash, whether the record is unchanged or updated. The embedding run then decides whether the record needs re-embedding.
+
+#### Scenario: Unchanged record keeps its embedding
+- **WHEN** an embedded record is re-imported with no changes
+- **THEN** its embedding, embedding model, and input hash are exactly as before
+
+#### Scenario: Updated record keeps its embedding until re-embedded
+- **WHEN** an embedded record's source data changes and it is re-imported
+- **THEN** its normalized fields are updated and its embedding fields are still present, so the next embedding run can compare input hashes
+
 ### Requirement: Import report
 Each import run SHALL produce a report with the dataset's upstream commit and checksum, counts of created, updated, and unchanged records, and counts of eligible and ineligible records (ineligible grouped by reason).
 

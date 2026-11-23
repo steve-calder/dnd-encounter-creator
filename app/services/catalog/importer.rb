@@ -1,6 +1,8 @@
 module Catalog
   # Imports every record in the committed dataset into the Monster collection.
   # Idempotent: upserts by stable ID and skips records whose content is unchanged.
+  # Upserts use $set (replace: false) so fields the import does not own, such as
+  # embeddings written by Catalog::Embedder, survive a re-import.
   class Importer
     class DuplicateId < StandardError; end
 
@@ -18,7 +20,7 @@ module Catalog
         elsif existing[id] != attrs[:content_hash] then :updated
         else :unchanged
         end
-        Monster.new(attrs).upsert(replace: true) unless status == :unchanged
+        Monster.new(attrs).upsert(replace: false) unless status == :unchanged
         counts[status] += 1
       end
 

@@ -2,6 +2,7 @@ ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
 require_relative "test_helpers/srd_fixture"
+require_relative "test_helpers/search_index_helper"
 
 module ActiveSupport
   class TestCase

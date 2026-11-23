@@ -19,8 +19,8 @@ and don't quietly diverge from it.
   `ApplicationRecord` models. Models `include Mongoid::Document`.
 - MongoDB runs in Docker (`mongodb/mongodb-atlas-local`), which includes `mongot`,
   so `$vectorSearch` and search indexes work locally.
-- Planned: Ollama for generation and embeddings, and an MCP stdio server that calls
-  shared Rails services.
+- Ollama runs locally. Embeddings use `embeddinggemma` (768 dimensions). Planned:
+  Ollama for generation, and an MCP stdio server that calls shared Rails services.
 
 ## Commands
 
@@ -34,6 +34,10 @@ bin/rubocop                   # lint (rubocop-rails-omakase)
 bin/rubocop -a                # autocorrect safe offenses
 bin/ci                        # full local CI: rubocop, audits, brakeman, tests
 docker compose down -v && docker compose up -d --wait   # wipe DB and rerun init scripts
+bin/rails catalog:import            # load the committed SRD catalog (idempotent)
+bin/rails catalog:search_indexes    # create/update vector + text search indexes
+bin/rails catalog:embed             # embed new/changed records (needs Ollama)
+bin/rails catalog:compare_search    # vector vs. keyword rankings for sample scenes
 ```
 
 Before calling a task done, run `bin/rubocop` and `bin/rails test`. Prefer `bin/ci`
@@ -48,6 +52,7 @@ when the change touches security-relevant code or dependencies.
   services.** Don't duplicate rules in either place.
 - `lib/tasks/`: rake tasks for catalog import and embedding (re)generation.
 - `docker/mongo/init/`: scripts that run once, only on an empty data volume.
+  Don't create search indexes there; `Catalog::SearchIndexes` owns them.
 - `test/`: Minitest. Mirror the `app/` layout.
 
 ## Domain rules (don't get these wrong)
@@ -68,22 +73,32 @@ when the change touches security-relevant code or dependencies.
 
 ## Vector search gotchas
 
-- The index `monsters_vector_index` is created by
-  `docker/mongo/init/01-vector-index.js`. Its size comes from
-  `EMBEDDING_DIMENSIONS` (default 768, for `nomic-embed-text`), which **must match
-  the embedding model's output size.** If you switch models, update that variable
-  and the README together, then recreate the volume.
-- Init scripts run only on an empty volume. Editing them has no effect until you
-  run `docker compose down -v`.
-- Use the same embedding model for queries and the catalog. Store the model name and
-  an input hash on each record, and skip records whose hash hasn't changed on reimport.
-- Search indexes build asynchronously. Tests that query right after inserting data
-  may need to wait until the index is queryable.
+- Rails owns the search index definitions in `Catalog::SearchIndexes`
+  (`monsters_vector_index` and `monsters_text_index`). Apply changes with
+  `bin/rails catalog:search_indexes`, which creates or updates them in place. There's
+  no need for `docker compose down -v`. The vector size comes from
+  `EMBEDDING_DIMENSIONS` (default 768, for `embeddinggemma`), which **must match
+  the embedding model's output size.** If you switch models, set
+  `EMBEDDING_MODEL` and `EMBEDDING_DIMENSIONS`, then rerun `catalog:search_indexes`
+  and `catalog:embed`.
+- `mongodb-atlas-local` can't update a `vectorSearch` index in place, so
+  `SearchIndexes` drops and recreates it under the same name. Text indexes update
+  normally.
+- Use the same embedding model for queries and the catalog. Its prompt templates
+  live in `Catalog::EmbeddingConfig`. Each record stores the model name and an
+  input hash, and `catalog:embed` skips records whose hash hasn't changed. The
+  importer upserts with `$set`, so re-imports keep embeddings. Don't switch it
+  back to `replace: true`.
+- Search indexes build asynchronously, and new writes become searchable a moment
+  later. Search tests use `SearchIndexHelper`: provision once per worker, use fixed
+  one-hot vectors, and poll with `eventually` instead of sleeping.
 
 ## Testing
 
 - Tests run in parallel against `dnd_encounter_creator_test` on the same container.
-  Clean up collections between tests and don't rely on data from the init script.
+  Each worker gets its own copy (`dnd_encounter_creator_test-<n>`). Clean up
+  collections between tests (`delete_all`, never drop `monsters`, since that drops
+  its search indexes) and don't rely on data from the init script.
 - Don't call real Ollama or the network in unit tests. Stub the model and embedding
   clients behind a small interface. Use fixed vectors for retrieval tests.
 - In GitHub Actions, the `test` and `system-test` jobs start a

@@ -4,7 +4,8 @@ module Catalog
   # Turns one verbatim upstream record into Monster attributes. Pure: no I/O.
   module Normalizer
     # Bump when parsing changes so re-import updates records whose source is unchanged.
-    VERSION = 1
+    # 2: adds search_document.
+    VERSION = 2
 
     ABILITY_KEYS = { "str" => "STR", "dex" => "DEX", "con" => "CON", "int" => "INT", "wis" => "WIS", "cha" => "CHA" }.freeze
 
@@ -36,7 +37,7 @@ module Catalog
       cr = challenge_rating(props)
       xp, xp_source = experience(props, cr)
 
-      {
+      attrs = {
         name: raw["name"],
         book: raw["book"],
         publisher: raw["publisher"],
@@ -60,6 +61,7 @@ module Catalog
         source: raw,
         content_hash: content_hash(raw)
       }
+      attrs.merge(search_document: SearchDocument.call(attrs))
     end
 
     # Returns a Rational, or nil when the CR is missing, non-numeric ("None"), or

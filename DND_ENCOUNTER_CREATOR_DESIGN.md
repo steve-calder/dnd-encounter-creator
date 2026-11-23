@@ -21,6 +21,16 @@ Preserve each source record under a stable ID, including the original stat block
 
 Embed a short search document per record from available fields such as description, type, movement, and habitat. Store the embedding model identity and input hash. Use the same model for query and catalog embeddings, and skip unchanged records on reimport. Use structured filters for eligibility and XP, then rank candidates by vector similarity. Give the LLM compact retrieved summaries and IDs as its RAG context. Fetch full stat blocks directly from MongoDB after validating the lineup.
 
+Embeddings use the local Ollama model `embeddinggemma` (768 dimensions). Rails owns both search indexes (`bin/rails catalog:search_indexes`): `monsters_vector_index` filters on `eligible`, `xp`, `challenge_rating`, and `embedding_model`, and `monsters_text_index` backs the keyword baseline. The catalog has no habitat field, and only 47 of 379 records have lore, so thematic signal comes mostly from names, creature types, movement, and traits, plus the embedding model's own world knowledge.
+
+**Vector vs. keyword comparison** (`bin/rails catalog:compare_search`, max 2,250 XP, top 8 each):
+
+- *Forest road ambush:* vector is clearly better. Vector returned Wolf, Goblin, Dire Wolf, Hobgoblin, Werewolf, and Gnoll; keyword drifted to Air Elemental, Ochre Jelly, and Octopus.
+- *Frozen mountain pass:* vector is better. Vector returned Winter Wolf, Ice Mephit, Giant Elk, and White Dragon Wyrmling; keyword returned Giant Wolf Spider, Veteran, and Hunter Shark. Vector still had noise (Nightmare, Giant Fire Beetle).
+- *Crypt* and *volcanic cave:* both methods are good, and vector is more consistent. Vector filled the crypt with undead only, and added Red Dragon Wyrmling, Hell Hound, and Steam Mephit to the cave.
+- *Boat in rough seas* (the full acceptance prompt): vector found Sea Hag, Reef Shark, and Merfolk, but party words ("fighter, wizard, druid") pulled in Bandit Captain, Green Hag, and a Green Dragon Wyrmling. Keyword was worse: it matched "druid" and "wizard" to Druid, Acolyte, and Priest. A short scene query ("sea creatures attacking a ship") returned almost only aquatic creatures. So generation should search with the summarized scene from step 1 of the generation flow, not the DM's raw text.
+- Scores are compressed (vector scores about 0.64–0.73), so neighboring ranks are only weakly separated. Broad terrains such as plains and cities remain weak without habitat data. That is a planned follow-up: add habitat tags, then re-run this comparison.
+
 ## Generation flow
 
 1. The DM enters the party and scene and selects a difficulty. Ollama extracts party levels and summarizes the scene. Ask for clarification if headcount and levels are missing or inconsistent. Classes are optional.
@@ -49,7 +59,7 @@ Verify that unknown IDs, invalid quantities, and over-budget proposals fail vali
 
 1. Inspect the pinned dataset, commit the curated SRD subset, and import it. Render a catalog stat block in Rails.
 2. Implement and test the 2024 XP calculator against the boat example.
-3. Generate embeddings locally, create the vector index, and inspect candidate rankings. First revise the index's filter fields: the init script filters on `environment`, which the catalog doesn't have, and it lacks the `eligible` and `xp` filters that the retrieval order needs.
+3. Generate embeddings locally, create the vector index, and inspect candidate rankings.
 4. Expose search and validation through MCP and call both tools from Rails.
 5. Wire in Ollama's tool loop and complete the generation screen. Run the acceptance example and failure cases end to end.
 

@@ -55,6 +55,44 @@ class Catalog::ImporterTest < ActiveSupport::TestCase
     assert_equal 130, Monster.find("srd-2014--giant-shark").hit_points
   end
 
+  test "search document is stored" do
+    import
+
+    assert_match "Giant Shark. Huge beast", Monster.find("srd-2014--giant-shark").search_document
+  end
+
+  EMBEDDING_FIELDS = {
+    embedding: [ 0.5, 0.25 ], embedding_model: "test-model", embedding_input_hash: "abc123", embedded_at: Time.utc(2026, 1, 1)
+  }.freeze
+
+  def embed_shark!
+    Monster.collection.update_one({ _id: "srd-2014--giant-shark" }, { "$set" => EMBEDDING_FIELDS })
+  end
+
+  def shark_embedding_fields
+    Monster.collection.find(_id: "srd-2014--giant-shark").first.slice(*EMBEDDING_FIELDS.keys.map(&:to_s)).symbolize_keys
+  end
+
+  test "unchanged re-import keeps embedding fields" do
+    import
+    embed_shark!
+    import
+
+    assert_equal EMBEDDING_FIELDS, shark_embedding_fields
+  end
+
+  test "updated re-import keeps embedding fields and updates normalized fields" do
+    import
+    embed_shark!
+    changed = srd_fixture.deep_dup
+    changed["monsters"].find { |m| m["name"] == "Giant Shark" }["properties"].merge!("HP" => "130 (12d12+52)", "data-HpNum" => 130)
+    report = import(Catalog::Dataset.new(source: changed["source"], monsters: changed["monsters"]))
+
+    assert_equal 1, report.updated
+    assert_equal 130, Monster.find("srd-2014--giant-shark").hit_points
+    assert_equal EMBEDDING_FIELDS, shark_embedding_fields
+  end
+
   test "records missing from the dataset are reported as stale and kept" do
     Monster.create!(_id: "srd-2014--retired", name: "Retired")
 

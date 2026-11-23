@@ -54,6 +54,16 @@ class Monster
   field :source_revision, type: String
   field :source_checksum, type: String
 
+  # Plain-text description used for embedding and keyword search (Catalog::SearchDocument).
+  field :search_document, type: String
+
+  # Written only by Catalog::Embedder. No defaults: the importer upserts with
+  # $set of the document's attributes, and a default would overwrite these.
+  field :embedding, type: Array
+  field :embedding_model, type: String
+  field :embedding_input_hash, type: String
+  field :embedded_at, type: Time
+
   index({ eligible: 1 })
   index({ xp: 1 })
   index({ name: 1 })
